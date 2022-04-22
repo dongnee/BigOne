@@ -179,7 +179,7 @@ knu_dic2 <- knu_dic2 %>%
 # 확인
 tail(knu_dic2,20)
 
-write.csv(knu_dic2, "data/")
+write.csv(knu_dic2, "data/knu_SentiWord_Dict_2.csv")
 
 
 ######################## 다시 감정점수 분류
