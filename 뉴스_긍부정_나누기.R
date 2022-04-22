@@ -65,16 +65,56 @@ View(raw_news_token)
 
 # ------------------------------------------------------
 # 분류 작업 테스트
-raw_news_token$분류 <-
-  if (raw_news_token$스코어 <= 0.48) {
-    '긍정'
-  } else if (raw_news_token$스코어 <= 0.52) {
-    '중립'
-  } else {
-    '부정'
-  }
+
+raw_news_token$분류 <- ifelse(raw_news_token$스코어 >= 1,'긍정',
+                          ifelse(raw_news_token$스코어 == 0,'중립','부정'))
 
 View(raw_news_token)
+
+
+# ------------------------------------------------------
+# 긍정/부정/중립 그래프로 비교
+
+freq_score <- raw_news_token %>%
+  group_by(분류) %>% 
+  count(분류)
+
+freq_score
+
+# 비율로 계산
+ratio <- (freq_score$n/sum(freq_score$n))*100
+
+freq_score$ratio <- ratio
+
+freq_score
+
+
+# 누적 그래프 만들기
+colorchip <- c("#d1495b", "#edae49", "#66a182")
+
+freq_score$dummy <- 0
+freq_score
+
+ggplot(freq_score, aes(x = dummy, y = ratio, fill = 분류)) +
+  geom_col() +
+  geom_text(aes(label = paste0(round(ratio, 1), "%")),
+            position = position_stack(vjust = 0.5)) +
+  theme(axis.title.x = element_blank(), # x축 이름 삭제
+        axis.text.x = element_blank(), # x축 값 삭제
+        axis.ticks.x = element_blank(), # x축 눈금 삭제
+        axis.title.y = element_blank())+ 
+  ggtitle('뉴스 데이터 긍정/부정/중립 비율') +
+  theme(title = element_text(size=15, face='bold')) +
+  scale_fill_manual(values=colorchip)
+
+
+
+
+
+
+
+
+
 
 
 
