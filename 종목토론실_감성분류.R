@@ -773,15 +773,14 @@ View(raw_discuss2)
 date_discuss <- raw_discuss2 %>% group_by(작성일) %>% count()
 View(date_discuss %>% arrange(-n))
 
-# 날짜변환 ㅠ
+# 날짜변환 ㅠ 실패
 glimpse(date_discuss)
 gsub(".","-",date_discuss$작성일)
 date_discuss$작성일[1]
 as.Date("2020.01.01", format="%Y-%m-%d")
 as.Date(date_discuss$작성일)
 
-# 통계
-summary(date_discuss_arr)
+# 위치찾기
 which(date_discuss$n==1263)
 date_discuss[190:200,]
 
