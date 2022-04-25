@@ -162,6 +162,12 @@ top10_senti <- senti_word2 %>%
   slice_max(n, n = 20) 
 View(top10_senti)
 
+# 중립 단어 분류
+senti_neu <- senti_word2 %>% 
+  filter(sentiment == "neu") %>%
+  count(sentiment, word) %>% filter(n > 1)
+View(senti_neu)
+
 # ------> 그래프
 ggplot(top10_senti, aes(x = reorder(word, n),
                         y = n,
