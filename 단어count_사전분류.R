@@ -4,6 +4,7 @@
 # 필요패키지
 library(dplyr)
 library(readr)
+library(stringr)
 
 setwd('C:/Users/admin/BigOne')
 getwd()
@@ -19,18 +20,20 @@ senti_word
 
 # 감정사전 데이터 불러오기
 # Sys.setlocale("LC_ALL", "C")
-knu_dic <- read_csv("data/단어합본.csv")
-# Sys.setlocale("LC_ALL", "Korean")
-nrow(knu_dic) # 16090
+knu_dic <- read.csv("data/단어합본.csv", header=T, sep=",", encoding="UTF-8")
+Sys.setlocale("LC_ALL", "Korean")
+nrow(knu_dic) # 16090 -> 16165
 knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
 knu_dic
 
 # 단어별로 카운트
 count_senti <- senti_word %>% 
   count(word, polarity) %>% arrange(-n)
+nrow(count_senti) # 97166
 View(count_senti)
 
-write.csv(count_senti, "data/종목토론실_단어count.csv")
+# count_senti를 csv로 저장해서 감정점수 분류 후 사전에 합칠 예정
+#write.csv(count_senti, "data/종목토론실_단어count.csv")
 
 #################
 # 위에서 저장한 count파일을 엑셀로 분류후 
@@ -61,49 +64,137 @@ for (i in 1:nrow(ex_count)){
     }
   }
 }
+#--------------------------------------------
 
+# 종목토론실_단어count.csv 가져오기
+sentiword_count <- read.csv("data/종목토론실_단어count.csv", header=T, sep=",", encoding="UTF-8")
+sentiword_count
+nrow(sentiword_count) # 97332행 
+
+# 중복단어 제거
+sentiword_count <- sentiword_count[!duplicated(sentiword_count$word),]
+nrow(sentiword_count) # 97116행 
+head(sentiword_count)
+# word, polarity 컬럼만 추출
+sentiword_count <- sentiword_count[,c(-1,-4)]
+# NA값 제외하고 추출
+sentiword_count <- sentiword_count[!is.na(sentiword_count$polarity),]
+View(sentiword_count)
+nrow(sentiword_count) # 2454행 
+
+# (감정사전) 새로 리베이스한 단어합본.csv 가져오기
+# Sys.setlocale("LC_ALL", "C")
+knu_dic <- read_csv("data/단어합본.csv")
+# Sys.setlocale("LC_ALL", "Korean")
+tail(knu_dic)
+nrow(knu_dic) #17544행
+# word, polarity 컬럼만 추출
+knu_dic <- knu_dic[,-1]
+View(knu_dic)
+# NA값 확인후 제거
+sum(is.na(knu_dic)) # 2개
+knu_dic <- na.omit(knu_dic)
+sum(is.na(knu_dic)) # 0개
+nrow(knu_dic) #17543행
+
+# 복사본
+knu_dic2 <- knu_dic
+knu_dic3 <- knu_dic2
+
+View(sentiword_count)
+
+# sentiword_count 에서 
+# 1행부터 행 총 개수(97116행)만큼 순서대로 i에 대입
+for (i in 1:nrow(sentiword_count)){
+  t = as.character(sentiword_count[i, 'word'])
+  
+  # 사전에 t(i행의 단어)가 없으면 : 카카오는 F
+  if(sum(knu_dic$word %in% t) == 0){
+    
+      knu_dic2 <- rbind(knu_dic2, sentiword_count[i,])
+
+  } else {
+    # 사전 word컬럼에 i 행의 단어가 있음
+    # polarity 값이 다르다면 count에 있는 polarity값을 dic polarity값으로 변경
+    if (knu_dic[knu_dic$word == t, 'polarity'] != sentiword_count[sentiword_count$word == t, 'polarity']) {
+
+        knu_dic2[knu_dic2$word == t, 'polarity'] <- sentiword_count[sentiword_count$word == t, 'polarity']
+    }
+  }
+}
+
+View(knu_dic2)
+nrow(knu_dic2) #18441 (898행 추가됨)
 
 ##############################
 # 2차 분류
 
 senti_word %>%
-  filter(str_detect(word, "갈다")) %>% View()
+  filter(str_detect(word, "효자")) %>% View()
 
-# -----------
-
-senti_word %>%
-  filter(str_detect(word, "하다")) %>% View()
-senti_word %>% filter(id == '12350')
-# -----------
-
-senti_word %>%
-  filter(str_detect(word, "개미")) %>% View()
 # --> 점수가 2개임
-knu_dic %>% filter(word %in% c("개미")) # 사전 점수가 2개여서 삭제하고 다시 추가
-knu_dic <- subset(knu_dic, word!='개미')
-knu_dic %>% filter(word %in% c("단타")) # 사전 점수가 2개여서 삭제하고 다시 추가
-knu_dic <- subset(knu_dic, word!='단타')
-knu_dic %>% filter(word %in% c("고평가")) # 사전 점수가 2개여서 삭제하고 다시 추가
-knu_dic <- subset(knu_dic, word!='고평가')
-knu_dic %>% filter(word %in% c("마이너스")) # 사전 점수가 2개여서 삭제하고 다시 추가
-knu_dic <- subset(knu_dic, word!='마이너스')
+knu_dic2 %>% filter(word %in% c("개미")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='개미')
+knu_dic2 %>% filter(word %in% c("단타")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='단타')
+knu_dic2 %>% filter(word %in% c("고평가")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='고평가')
+knu_dic2 %>% filter(word %in% c("마이너스")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='마이너스')
+knu_dic2 %>% filter(word %in% c("무너지다")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='무너지다')
+knu_dic2 %>% filter(word %in% c("후회")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='후회')
+knu_dic2 %>% filter(word %in% c("나쁘다")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='나쁘다')
+knu_dic2 %>% filter(word %in% c("물리다")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='물리다')
+knu_dic2 %>% filter(word %in% c("울다")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='울다')
+knu_dic2 %>% filter(word %in% c("잘못")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='잘못')
+knu_dic2 %>% filter(word %in% c("혁신")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='혁신')
+knu_dic2 %>% filter(word %in% c("독점")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='독점')
+knu_dic2 %>% filter(word %in% c("싸우다")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='싸우다')
+knu_dic2 %>% filter(word %in% c("소각")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='소각')
+knu_dic2 %>% filter(word %in% c("액면분할")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='액면분할')
+knu_dic2 %>% filter(word %in% c("부자")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='부자')
+knu_dic2 %>% filter(word %in% c("성공")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='성공')
+knu_dic2 %>% filter(word %in% c("대출")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='대출')
+knu_dic2 %>% filter(word %in% c("횡령")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='횡령')
+knu_dic2 %>% filter(word %in% c("축하")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='축하')
+knu_dic2 %>% filter(word %in% c("행복")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='행복')
+knu_dic2 %>% filter(word %in% c("불법")) # 사전 점수가 2개여서 삭제하고 다시 추가
+knu_dic2 <- subset(knu_dic2, word!='불법')
 
 # 새로 추가할 단어점수
-new_dic <- data.frame(word=c('개미','고평가','마이너스'),
-                      polarity=c(0,-1,1))
+new_dic <- data.frame(word=c('개미','고평가','마이너스','무너지다','후회',
+                             '나쁘다',"물리다","울다","잘못","혁신",
+                             "독점","싸우다","액면분할","부자","성공",
+                             '대출','횡령','축하','행복','불법'),
+                      polarity=c(0,-1,-1,-2,-2,
+                                 -1,-1,-1,-1,1,
+                                 -1,-1,1,1,2,
+                                 0,-2,1,2,-2))
 
-knu_dic2 <- rbind(knu_dic, new_dic)
-knu_dic2
-
-# 사전에 있는 단어는 점수만 수정
-
-knu_dic2 <- knu_dic2 %>%
-  mutate(polarity = ifelse(word %in% c(""), 0, polarity))
+knu_dic3 <- rbind(knu_dic2, new_dic)
+nrow(knu_dic3) # 18413행
 
 # 확인
-tail(knu_dic2,20)
+View(knu_dic3)
 
-write.csv(knu_dic2, "data/단어합본.csv")
+write.csv(knu_dic3, "data/단어합본.csv")
 
 
 
