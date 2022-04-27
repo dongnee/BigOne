@@ -26,7 +26,7 @@ getwd()
 ##### 2차. 트위터 감성분류 진행
 
 # 데이터 불러오기
-raw_twitter <- read_csv("crawl_data/twitter.csv")
+raw_twitter <- read.csv("crawl_data/twitter.csv", encoding="UTF-8")
 View(raw_twitter)
 nrow(raw_twitter['Text']) # 3802
 
@@ -56,19 +56,12 @@ raw_twitter3 <- raw_twitter2 %>%
 # replace_html : HTML 마크업을 대체
 View(raw_twitter3)
 
-### 중복처리 x
-sum(duplicated(raw_twitter3$Text)) # 중복내용 78개 처리
-raw_twitter3 <- raw_twitter3[!duplicated(raw_twitter3$Text),]
-sum(duplicated(raw_twitter3$Text)) # 중복내용 0개
-View(raw_twitter3) # 행 3,650개
-
 # 데이터 구조 확인
 glimpse(raw_twitter3)
 
 
 ### 토큰화 제목 열에 있는 문장을 단어단위로 쪼개는 과정
 
-# 방법1)
 word_twitter <- raw_twitter3 %>%
   # unnest_tokens : 다루고자하는 텍스트 데이터 객체
   unnest_tokens(input = Text, # 정돈할 열이름
@@ -103,89 +96,100 @@ nrow(word_twitter_done) # [1] 65882
 # ------------------------------------------------------
 
 # 종목토론실에서 사용했던 감정사전에서 수정된 2번째 사전 활용
+# knu_dic <- read_csv("data/knu_SentiWord_Dict_2.csv")
+# knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
+# knu_dic
 
-knu_dic <- read_csv("data/knu_SentiWord_Dict_2.csv")
-knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
-knu_dic
+
+##########################  감정사전 수정 ########################## 
+# # 단어가 포함된 글 확인
+# senti_word %>%
+#   filter(str_detect(word, "네이버")) %>% View()
+# # --> 네이버 기업이 포함된 글이 많아서 여기서는 감정보다는 중립으로 분류
+# 
+# senti_word %>%
+#   filter(str_detect(word, "않다")) %>% View()
+# # --> 부정어로 분류
+# 
+# senti_word %>%
+#   filter(str_detect(word, "깨다")) %>% View()
+# # --> 부정어로 분류
+# 
+# senti_word %>%
+#   filter(str_detect(word, "오르")) %>% View()
+# # --> 긍정어로 분류
+# 
+# senti_word %>%
+#   filter(str_detect(word, "모르다")) %>% View()
+# # --> 부정어로 분류
+# 
+# senti_word %>%
+#   filter(str_detect(word, "카카오페이")) %>% View()
+# # --> 기업정보 글이 많아서 여기서는 감정보다는 중립으로 분류
+# 
+# senti_word %>%
+#   filter(str_detect(word, "카카오뱅크")) %>% View()
+# # --> 기업정보 글이 많아서 여기서는 감정보다는 중립으로 분류
+# 
+# 
+# # ----------------------------------------------------
+# 
+# # 감정사전에 해당 단어 확인
+# knu_dic %>% filter(word %in% c("네이버")) 
+# knu_dic %>% filter(word %in% c("않다")) # 사전에없음
+# knu_dic %>% filter(word %in% c("깨다")) # 사전에없음
+# knu_dic %>% filter(word %in% c("오르")) # 사전에없음
+# knu_dic %>% filter(word %in% c("모르다")) # 사전에없음
+# knu_dic %>% filter(word %in% c("카카오페이")) 
+# knu_dic %>% filter(word %in% c("카카오뱅크")) 
+# 
+# 
+# 
+# # 새로운 감정사전에 수정
+# # 해당 단어가 사전에 포함되지않아서 추가
+# knu_dic2 <- rbind(knu_dic, data.frame(word=c("않다","깨다","오르","모르다"), 
+#                                       polarity=c(-1,-1,1,-1)))
+# 
+# # 사전에 있는 단어 감정 점수 수정
+# knu_dic2 <- knu_dic2 %>%
+#   mutate(polarity = ifelse(word %in% c("네이버"), 0, polarity))
+# knu_dic2 <- knu_dic2 %>%
+#   mutate(polarity = ifelse(word %in% c("카카오페이"), 0, polarity))
+# knu_dic2 <- knu_dic2 %>%
+#   mutate(polarity = ifelse(word %in% c("카카오뱅크"), 0, polarity))
+
+# # ----------------------------------------------------
+# # 확인
+# tail(knu_dic2,20)
+# 
+# write.csv(knu_dic2, "data/knu_SentiWord_Dict_2.csv")
+
+
+###### 다시 감정점수 분류
+# senti_word <- word_twitter_done %>%
+#   left_join(knu_dic2, by = "word") %>% 
+#   mutate(polarity = ifelse(is.na(polarity), 0, polarity))
 
 # ------------------------------------------------------
+
+# 감정사전 정리된 완성본으로 다시 감정점수 분류
+# Sys.setlocale("LC_ALL", "C") # - read_csv 에러 : invalid multibyte string, element 1
+knu_dic2 <- read.csv("data/단어합본.csv", encoding="UTF-8")
+# Sys.setlocale("LC_ALL", "Korean")
+nrow(knu_dic2) # 16090 -> 17941
+knu_dic2 <- knu_dic2[-1] #첫번째 컬럼은 필요없어서 제외
+head(knu_dic2)
+
+
 # 감정 점수 부여하기
 # dplyr::left_join() : 감정사전 word 기준 결합
 # 없는단어는 polarity NA -> 0 처리
 senti_word <- word_twitter_done %>%
-  left_join(knu_dic, by = "word") %>%
-  mutate(polarity = ifelse(is.na(polarity), 0, polarity))
-
-View(senti_word)
-
-##########################  감정사전 수정 ########################## 
-# 단어가 포함된 글 확인
-senti_word %>%
-  filter(str_detect(word, "네이버")) %>% View()
-# --> 네이버 기업이 포함된 글이 많아서 여기서는 감정보다는 중립으로 분류
-
-senti_word %>%
-  filter(str_detect(word, "않다")) %>% View()
-# --> 부정어로 분류
-
-senti_word %>%
-  filter(str_detect(word, "깨다")) %>% View()
-# --> 부정어로 분류
-
-senti_word %>%
-  filter(str_detect(word, "오르")) %>% View()
-# --> 긍정어로 분류
-
-senti_word %>%
-  filter(str_detect(word, "모르다")) %>% View()
-# --> 부정어로 분류
-
-senti_word %>%
-  filter(str_detect(word, "카카오페이")) %>% View()
-# --> 기업정보 글이 많아서 여기서는 감정보다는 중립으로 분류
-
-senti_word %>%
-  filter(str_detect(word, "카카오뱅크")) %>% View()
-# --> 기업정보 글이 많아서 여기서는 감정보다는 중립으로 분류
-
-
-# ----------------------------------------------------
-
-# 감정사전에 해당 단어 확인
-knu_dic %>% filter(word %in% c("네이버")) 
-knu_dic %>% filter(word %in% c("않다")) # 사전에없음
-knu_dic %>% filter(word %in% c("깨다")) # 사전에없음
-knu_dic %>% filter(word %in% c("오르")) # 사전에없음
-knu_dic %>% filter(word %in% c("모르다")) # 사전에없음
-knu_dic %>% filter(word %in% c("카카오페이")) 
-knu_dic %>% filter(word %in% c("카카오뱅크")) 
-
-
-
-# 새로운 감정사전에 수정
-# 해당 단어가 사전에 포함되지않아서 추가
-knu_dic2 <- rbind(knu_dic, data.frame(word=c("않다","깨다","오르","모르다"), 
-                                      polarity=c(-1,-1,1,-1)))
-
-# 사전에 있는 단어 감정 점수 수정
-knu_dic2 <- knu_dic2 %>%
-  mutate(polarity = ifelse(word %in% c("네이버"), 0, polarity))
-knu_dic2 <- knu_dic2 %>%
-  mutate(polarity = ifelse(word %in% c("카카오페이"), 0, polarity))
-knu_dic2 <- knu_dic2 %>%
-  mutate(polarity = ifelse(word %in% c("카카오뱅크"), 0, polarity))
-
-# ----------------------------------------------------
-# 확인
-tail(knu_dic2,20)
-
-write.csv(knu_dic2, "data/knu_SentiWord_Dict_2.csv")
-
-
-######################## 다시 감정점수 분류
-senti_word <- word_twitter_done %>%
   left_join(knu_dic2, by = "word") %>% 
-  mutate(polarity = ifelse(is.na(polarity), 0, polarity))
+  filter(!is.na(polarity))
+
+nrow(senti_word) # 32611
+
 
 ## polarity 점수별로 긍정/부정/중립 분류
 senti_word2 <- senti_word %>% 
@@ -228,7 +232,7 @@ senti_score <- merge(senti_word2, score,
                      by="id", all=F) %>% select(Text, score) %>% group_by(Text)
 
 # id별로 합쳐서 합계가 중복해서 들어감 -> 정리
-sum(duplicated(senti_score$Text)) # 중복내용 62247개 처리
+sum(duplicated(senti_score$Text)) # 중복내용 69850개 처리
 senti_score <- senti_score[!duplicated(senti_score$Text),]
 sum(duplicated(senti_score$Text)) # 중복내용 0개
 
@@ -254,7 +258,6 @@ freq_score <- senti_score %>%
 
 # 감정별 개수를 비율로 계산
 ratio <- (freq_score$n/sum(freq_score$n))*100
-
 freq_score$ratio <- ratio
 
 freq_score
@@ -278,6 +281,7 @@ ggplot(freq_score, aes(x = dummy, y = ratio, fill = sentiment)) +
 ##################################################################
 # 긍정 36.6% / 중립 35.8% / 부정 27.6%
 # -> 수정 후 33.5% / 40.6% / 25.9%
+# -> 48.2% / 19% / 32.8%
 freq_score
 
 

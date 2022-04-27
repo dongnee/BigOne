@@ -26,7 +26,7 @@ getwd()
 ##### 3차. View 감성분류 진행
 
 # 데이터 불러오기
-raw_view <- read_csv("crawl_data/view_카카오035720_info_df.csv")
+raw_view <- read.csv("crawl_data/view_카카오035720_info_df.csv", encoding="UTF-8")
 View(raw_view)
 nrow(raw_view['content']) # 92
 
@@ -55,7 +55,6 @@ glimpse(raw_view3)
 
 ### 토큰화 제목 열에 있는 문장을 단어단위로 쪼개는 과정
 
-# 방법1)
 word_view <- raw_view3 %>%
   # unnest_tokens : 다루고자하는 텍스트 데이터 객체
   unnest_tokens(input = content, # 정돈할 열이름
@@ -88,65 +87,82 @@ nrow(word_view_done) # [1] 17543
 
 
 # ------------------------------------------------------
+# 
+# # 수정된 감정사전 활용
+# 
+# knu_dic <- read_csv("data/knu_SentiWord_Dict_2.csv")
+# knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
+# knu_dic
+# 
+# # ------------------------------------------------------
+# # 감정 점수 부여하기
+# # dplyr::left_join() : 감정사전 word 기준 결합
+# # 없는단어는 polarity NA -> 0 처리
+# senti_word <- word_view_done %>%
+#   left_join(knu_dic, by = "word") %>%
+#   mutate(polarity = ifelse(is.na(polarity), 0, polarity))
+# 
+# View(senti_word)
+# 
+# ##########################  감정사전 수정 ########################## 
+# # 단어가 포함된 글 확인
+# senti_word %>%
+#   filter(str_detect(word, "성장")) %>% View()
+# # --> 긍정어
+# 
+# senti_word %>%
+#   filter(str_detect(word, "증가")) %>% View()
+# # --> 긍정어
+# 
+# senti_word %>%
+#   filter(str_detect(word, "늘다")) %>% View()
+# # --> 긍정어
+# 
+# 
+# # ----------------------------------------------------
+# 
+# # 감정사전에 해당 단어 확인
+# knu_dic %>% filter(word %in% c("성장")) # 사전에없음
+# knu_dic %>% filter(word %in% c("증가")) # 사전에없음
+# knu_dic %>% filter(word %in% c("늘다")) # 사전에없음
+# 
+# # 새로운 감정사전에 수정
+# # 해당 단어가 사전에 포함되지않아서 추가
+# knu_dic2 <- rbind(knu_dic, data.frame(word=c("성장","증가","늘다"), 
+#                                       polarity=c(+1,+1,+1)))
+# 
+# # 사전에 있는 단어 감정 점수 수정
+# knu_dic2 <- knu_dic2 %>%
+#   mutate(polarity = ifelse(word %in% c(""), 0, polarity))
+# 
+# # ----------------------------------------------------
+# # 확인 후 수정된 사전 다시 csv로 저장
+# tail(knu_dic2,20)
+# 
+# write.csv(knu_dic2, "data/knu_SentiWord_Dict_2.csv")
 
-# 수정된 감정사전 활용
 
-knu_dic <- read_csv("data/knu_SentiWord_Dict_2.csv")
-knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
-knu_dic
+######################## 다시 감정점수 분류
 
 # ------------------------------------------------------
+
+# 감정사전 정리된 완성본으로 다시 감정점수 분류
+# Sys.setlocale("LC_ALL", "C") # - read_csv 에러 : invalid multibyte string, element 1
+knu_dic2 <- read.csv("data/단어합본.csv", encoding="UTF-8")
+# Sys.setlocale("LC_ALL", "Korean")
+nrow(knu_dic2) # 16090 -> 17941
+knu_dic2 <- knu_dic2[-1] #첫번째 컬럼은 필요없어서 제외
+head(knu_dic2)
+
+
 # 감정 점수 부여하기
 # dplyr::left_join() : 감정사전 word 기준 결합
 # 없는단어는 polarity NA -> 0 처리
 senti_word <- word_view_done %>%
-  left_join(knu_dic, by = "word") %>%
-  mutate(polarity = ifelse(is.na(polarity), 0, polarity))
-
-View(senti_word)
-
-##########################  감정사전 수정 ########################## 
-# 단어가 포함된 글 확인
-senti_word %>%
-  filter(str_detect(word, "성장")) %>% View()
-# --> 긍정어
-
-senti_word %>%
-  filter(str_detect(word, "증가")) %>% View()
-# --> 긍정어
-
-senti_word %>%
-  filter(str_detect(word, "늘다")) %>% View()
-# --> 긍정어
-
-
-# ----------------------------------------------------
-
-# 감정사전에 해당 단어 확인
-knu_dic %>% filter(word %in% c("성장")) # 사전에없음
-knu_dic %>% filter(word %in% c("증가")) # 사전에없음
-knu_dic %>% filter(word %in% c("늘다")) # 사전에없음
-
-# 새로운 감정사전에 수정
-# 해당 단어가 사전에 포함되지않아서 추가
-knu_dic2 <- rbind(knu_dic, data.frame(word=c("성장","증가","늘다"), 
-                                      polarity=c(+1,+1,+1)))
-
-# 사전에 있는 단어 감정 점수 수정
-knu_dic2 <- knu_dic2 %>%
-  mutate(polarity = ifelse(word %in% c(""), 0, polarity))
-
-# ----------------------------------------------------
-# 확인 후 수정된 사전 다시 csv로 저장
-tail(knu_dic2,20)
-
-write.csv(knu_dic2, "data/knu_SentiWord_Dict_2.csv")
-
-
-######################## 다시 감정점수 분류
-senti_word <- word_view_done %>%
   left_join(knu_dic2, by = "word") %>% 
-  mutate(polarity = ifelse(is.na(polarity), 0, polarity))
+  filter(!is.na(polarity))
+
+nrow(senti_word) # 9290
 
 ## polarity 점수별로 긍정/부정/중립 분류
 senti_word2 <- senti_word %>% 
@@ -161,12 +177,6 @@ top10_senti <- senti_word2 %>%
   group_by(sentiment) %>% 
   slice_max(n, n = 20) 
 View(top10_senti)
-
-# 중립 단어 분류
-senti_neu <- senti_word2 %>% 
-  filter(sentiment == "neu") %>%
-  count(sentiment, word) %>% filter(n > 1)
-View(senti_neu)
 
 # ------> 그래프
 ggplot(top10_senti, aes(x = reorder(word, n),
@@ -244,33 +254,12 @@ ggplot(freq_score, aes(x = dummy, y = ratio, fill = sentiment)) +
 
 ##################################################################
 # 긍정 73.9% / 중립 10.2% / 부정 15.9%
+# -> 88.6% / 3.4% / 8%
 freq_score
 
 
 
 #################
-# view 날짜별 게시글수
-
-# 데이터 불러오기
-raw_view <- read_csv("crawl_data/view_카카오035720_info_df.csv")
-View(raw_view)
-nrow(raw_view['content']) # 92
-
-## NA값이 들어있는 행은 삭제
-sum(is.na(raw_view$content)) # 4개
-raw_view2 <- raw_view[!is.na(raw_view$content),]
-sum(is.na(raw_view2$content)) # 0개
-
-# 날짜별로 count
-date_view <- raw_view2 %>% group_by(date) %>% count()
-View(date_view %>% arrange(-n))
-
-# 데이터형 확인
-glimpse(date_view)
-
-# chr 형 -> 날짜형으로 변경해야함
-# 이건 일단 보류 ㅠㅠ 
-# 검색 시 게시글 수가 많지가 않아 일별로 1~2개 사이 
-
+# view 날짜별 게시글수은 검색 시 나온 데이터가 얼마 없어서 패스
 
 

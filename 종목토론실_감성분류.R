@@ -99,7 +99,6 @@ nrow(word_discuss_done) # [1] 493052
 
 
 # ------------------------------------------------------
-
 # 감정사전 활용 예시
 
 # 기존 원본 파일 사용 -> 팀 전체가 분류한 단어합본.csv로 사용
@@ -112,7 +111,6 @@ knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
 knu_dic
 
 
-# ------------------------------------------------------
 # 수정 전 사전으로 감정 점수 부여하기
 # dplyr::left_join() : 감정사전 word 기준 결합
 
@@ -126,20 +124,24 @@ View(senti_word)
 # 위 df -> csv로 내보내서 감정단어 사전수정작업은 다른 파일에서 정리
 write.csv(senti_word, "data/종목토론실_단어별_감정점수.csv")
 
+
 # ---------------------------------------------------
 # 감정사전 정리된 완성본으로 다시 감정점수 분류
 
-# Sys.setlocale("LC_ALL", "C") - read_csv 에러 : invalid multibyte string, element 1
-knu_dic2 <- read_csv("data/단어합본.csv")
+# Sys.setlocale("LC_ALL", "C") # - read_csv 에러 : invalid multibyte string, element 1
+knu_dic2 <- read.csv("data/단어합본.csv", encoding="UTF-8")
 # Sys.setlocale("LC_ALL", "Korean")
-nrow(knu_dic2) # 16090 ->
-knu_dic2 <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
-knu_dic2
+nrow(knu_dic2) # 16090 -> 17941
+knu_dic2 <- knu_dic2[-1] #첫번째 컬럼은 필요없어서 제외
+head(knu_dic2)
 
-# 사전에 없는단어는 polarity NA -> 0 처리
+
+# 사전에 없는단어는 polarity NA, 제거
 senti_word2 <- word_discuss_done %>%
   left_join(knu_dic2, by = "word") %>% 
-  mutate(polarity = ifelse(is.na(polarity), 0, polarity))
+  filter(!is.na(polarity))
+
+nrow(senti_word2) # 270342
 
 # polarity 점수별로 긍정/부정/중립 분류
 senti_word3 <- senti_word2 %>% 
@@ -150,7 +152,7 @@ senti_word3 <- senti_word2 %>%
 ### 긍정, 부정단어별 가장 빈도가 많은 20개 추출
 top_senti <- senti_word3 %>%
   filter(sentiment != "neu") %>%
-  count(sentiment, word) %>% filter(n > 100) %>% 
+  count(sentiment, word) %>% 
   group_by(sentiment) %>% 
   slice_max(n, n = 20) 
 View(top_senti)
@@ -182,7 +184,7 @@ senti_score <- merge(senti_word3, score,
                      by="id", all=F) %>% select(제목, score) %>% group_by(제목)
 
 # id별로 합쳐서 합계가 중복해서 들어감 -> 정리
-sum(duplicated(senti_score$제목)) # 중복내용 299922개 처리
+sum(duplicated(senti_score$제목)) # 중복내용 373909개 처리
 senti_score <- senti_score[!duplicated(senti_score$제목),]
 sum(duplicated(senti_score$제목)) # 중복내용 0개
 
@@ -230,6 +232,7 @@ ggplot(freq_score, aes(x = dummy, y = ratio, fill = sentiment)) +
 ##################################################################
 # 긍정 7.3% / 중립 87.6% / 부정 5.1%
 # -> 수정 후 15% / 70.3% / 14.6%
+# -> 32.9% / 34.9% / 32.2%
 freq_score
 
 
@@ -257,16 +260,9 @@ View(raw_discuss2)
 date_discuss <- raw_discuss2 %>% group_by(작성일) %>% count()
 View(date_discuss %>% arrange(-n))
 
-# 날짜변환 ㅠ 실패
-glimpse(date_discuss)
-gsub(".","-",date_discuss$작성일)
-date_discuss$작성일[1]
-as.Date("2020.01.01", format="%Y-%m-%d")
-as.Date(date_discuss$작성일)
-
 # 위치찾기
 which(date_discuss$n==1263)
-date_discuss[190:200,]
+date_discuss[618,]
 
 
 # 선그래프 - 강조부분 화살표그리기
@@ -283,7 +279,7 @@ ggplot(date_discuss, aes(x=작성일, y=n, group=1))+
                    xend = 618, 
                    yend = 5250), 
                arrow=arrow(ends='last', length = unit(0.2, "cm")), 
-               color='orange',size=1.2)+
+               color='orange',size=1.2) +
   geom_segment(aes(x =541, 
                    y = 4700, 
                    xend = 541, 
