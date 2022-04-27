@@ -35,11 +35,11 @@ sum(duplicated(raw_twitter$Text)) # [1] 74
 sum(!duplicated(raw_twitter$Text)) # [1] 3728
 
 # 제목 컬럼, 중복 내용 정리 안하고
-raw_twitter[!duplicated(raw_twitter$Text),]
-raw_twitter2 <- raw_twitter[!duplicated(raw_twitter$Text),]
-View(raw_twitter2)
-typeof(raw_twitter2) # [1] "list"
-sum(duplicated(raw_twitter2$Text)) # 중복내용 0개
+# raw_twitter[!duplicated(raw_twitter$Text),]
+# raw_twitter2 <- raw_twitter[!duplicated(raw_twitter$Text),]
+# View(raw_twitter2)
+# typeof(raw_twitter2) # [1] "list"
+# sum(duplicated(raw_twitter2$Text)) # 중복내용 0개
 
 raw_twitter2 <- raw_twitter
 
@@ -231,10 +231,15 @@ score <- aggregate(polarity~id,senti_word2,sum)
 names(score) <- c('id', 'score')
 View(score)
 
+glimpse(senti_word2)
+
 # 감정점수 df와 score합계 df - inner_join
 senti_score <- merge(senti_word2, score,
-                     by="id", all=F) %>% select(Text, score) %>% group_by(Text)
+                     by="id", all=F) %>% 
+  select(Datetime  , Text, score) %>% group_by(Text)
+
 View(senti_score)
+
 # id별로 합쳐서 합계가 중복해서 들어감 -> 정리
 sum(duplicated(senti_score$Text)) # 중복내용 29002개 처리
 senti_score <- senti_score[!duplicated(senti_score$Text),]
@@ -247,6 +252,28 @@ senti_score <- senti_score %>%
                             ifelse(score <= -1, "neg", "neu")))
 View(senti_score)
 write.csv(senti_score, "data/감정점수합계_트위터.csv")
+
+
+# train 데이터는 2020~2021 , test 데이터는 2022 이므로
+# 일단 위 데이터에서 22년도 데이터는 따로 분리
+glimpse(senti_score)
+
+# Datetime 컬럼은 chr -> as.Date 변환, 시간은 삭제
+senti_score$Datetime <- str_sub(senti_score$Datetime, start=1, end=10)
+senti_score$Datetime <- as.Date(senti_score$Datetime)
+glimpse(senti_score)
+
+# Sys.setlocale("LC_ALL", "Korean")
+test_data <- senti_score["2022-01-01" <= senti_score$Datetime,]
+train_data <- senti_score["2022-01-01" > senti_score$Datetime,]
+View(test_data)
+View(train_data)
+
+write.csv(test_data, "data/test_감정점수합계_트위터.csv")
+write.csv(train_data, "data/train_감정점수합계_트위터.csv")
+
+
+
 
 # 감정 점수 높은순으로 정렬
 ### 긍정

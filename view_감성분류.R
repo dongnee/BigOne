@@ -195,6 +195,9 @@ ggplot(top10_senti, aes(x = reorder(word, n),
 
 ########## 콘텐츠별 감정 점수 구하기
 
+View(senti_word2)
+nrow(senti_word2) # 9290 / id- 92
+
 # 감정점수 합계 구한 df 따로 생성
 score <- aggregate(polarity~id,senti_word2,sum)
 names(score) <- c('id', 'score')
@@ -202,20 +205,51 @@ head(score)
 
 # 감정점수 df와 score합계 df - inner_join
 senti_score <- merge(senti_word2, score,
-                     by="id", all=F) %>% select(content, score) %>% group_by(content)
+                     by="id", all=F) %>% 
+  select(date, content, score) %>% group_by(content)
+
+View(senti_score)
 
 # id별로 합쳐서 합계가 중복해서 들어감 -> 정리
-sum(duplicated(senti_score$content)) # 중복내용 62247개 처리
+sum(duplicated(senti_score$content)) # 중복내용 9202개 처리
 senti_score <- senti_score[!duplicated(senti_score$content),]
 sum(duplicated(senti_score$content)) # 중복내용 0개
 
 View(senti_score)
 
-########### 정리된 감정score로 라벨링
+#------------ 정리된 감정score로 라벨링
 senti_score <- senti_score %>%
   mutate(sentiment = ifelse(score >= 1, "pos",
                             ifelse(score <= -1, "neg", "neu")))
+View(senti_score)
+# csv파일로 저장
+# write.csv(senti_score, "data/감정점수합계_View.csv")
 
+
+# train 데이터는 2020~2021 , test 데이터는 2022 이므로
+# 일단 위 데이터에서 22년도 데이터는 따로 분리
+glimpse(senti_score)
+
+# 작성일 컬럼을 as.Date 변환
+senti_score$date <- as.Date(gsub('\\.','-',senti_score$date))
+senti_score$date
+
+# Sys.setlocale("LC_ALL", "Korean")
+test_data <- senti_score["2022-01-01" <= senti_score$date,]
+train_data <- senti_score["2022-01-01" > senti_score$date,]
+View(test_data)
+View(train_data)
+names(test_data) <- c('date', 'text', 'score', 'senti')
+names(train_data) <- c('date', 'text', 'score', 'senti')
+head(test_data)
+head(train_data)
+
+# csv 파일로 저장
+# write.csv(test_data, "data/test_감정점수합계_View.csv")
+# write.csv(train_data, "data/train_감정점수합계_View.csv")
+
+
+# -----------------------------------------------------------
 # 감정 점수 높은순으로 정렬
 ### 긍정
 senti_score %>% select(score, 제목) %>% arrange(-score)

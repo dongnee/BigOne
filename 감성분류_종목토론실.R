@@ -31,7 +31,10 @@ getwd()
 ##### 1차. 종목토론실 감성분류 진행
 
 # 데이터 불러오기
-raw_discuss <- read_csv("crawl_data/discuss_2022_2020_df.csv")
+# raw_discuss <- read.csv("crawl_data/종목토론실_2022_2020_df.csv", encoding='UTF-8')
+# Sys.setlocale("LC_ALL", "C")
+raw_discuss <- read_csv("crawl_data/종목토론실_2022_2020_df.csv")
+# Sys.setlocale("LC_ALL", "Korean")
 View(raw_discuss)
 nrow(raw_discuss['제목']) # 221497
 
@@ -66,7 +69,6 @@ View(raw_discuss3)
 
 ### 토큰화 제목 열에 있는 문장을 단어단위로 쪼개는 과정
 
-# 방법1)
 word_discuss <- raw_discuss3 %>%
   # unnest_tokens : 다루고자하는 텍스트 데이터 객체
   unnest_tokens(input = 제목, # 정돈할 열이름
@@ -100,29 +102,29 @@ nrow(word_discuss_done) # [1] 493052
 
 # ------------------------------------------------------
 # 감정사전 활용 예시
-
-# 기존 원본 파일 사용 -> 팀 전체가 분류한 단어합본.csv로 사용
-# knu_dic <- read_csv("data/knu_SentiWord_Dict.csv")
-# Sys.setlocale("LC_ALL", "C") - read_csv 에러 : invalid multibyte string, element 1
-knu_dic <- read_csv("data/단어합본.csv")
-# Sys.setlocale("LC_ALL", "Korean")
-nrow(knu_dic) # 16090
-knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
-knu_dic
-
-
-# 수정 전 사전으로 감정 점수 부여하기
-# dplyr::left_join() : 감정사전 word 기준 결합
-
-# NA값은 처리하지 않고 확인
-senti_word <- word_discuss_done %>%
-  left_join(knu_dic, by = "word") 
-  #mutate(polarity = ifelse(is.na(polarity), 0, polarity))
-
-View(senti_word)
-
-# 위 df -> csv로 내보내서 감정단어 사전수정작업은 다른 파일에서 정리
-write.csv(senti_word, "data/종목토론실_단어별_감정점수.csv")
+# 
+# # 기존 원본 파일 사용 -> 팀 전체가 분류한 단어합본.csv로 사용
+# # knu_dic <- read_csv("data/knu_SentiWord_Dict.csv")
+# # Sys.setlocale("LC_ALL", "C") # read_csv 에러 : invalid multibyte string, element 1
+# knu_dic <- read_csv("data/단어합본.csv")
+# # Sys.setlocale("LC_ALL", "Korean")
+# nrow(knu_dic) # 16090
+# knu_dic <- knu_dic[-1] #첫번째 컬럼은 필요없어서 제외
+# knu_dic
+# 
+# 
+# # 수정 전 사전으로 감정 점수 부여하기
+# # dplyr::left_join() : 감정사전 word 기준 결합
+# 
+# # NA값은 처리하지 않고 확인
+# senti_word <- word_discuss_done %>%
+#   left_join(knu_dic, by = "word") 
+#   #mutate(polarity = ifelse(is.na(polarity), 0, polarity))
+# 
+# View(senti_word)
+# 
+# # 위 df -> csv로 내보내서 감정단어 사전수정작업은 다른 파일에서 정리
+# write.csv(senti_word, "data/종목토론실_단어별_감정점수.csv")
 
 
 # ---------------------------------------------------
@@ -185,13 +187,15 @@ nrow(score) # 135719
 
 # 감정점수 df와 score합계 df - inner_join
 senti_score <- merge(senti_word3, score,
-                     by="id", all=F) %>% select(제목, score) %>% group_by(제목)
+                     by="id", all=F) %>% 
+  select(`작성일`, `제목`, score) %>% group_by(`제목`)
 
 View(senti_score)
+
 # id별로 합쳐서 합계가 중복해서 들어감 -> 정리
-sum(duplicated(senti_score$제목)) # 중복내용 136372개 처리
-senti_score <- senti_score[!duplicated(senti_score$제목),]
-sum(duplicated(senti_score$제목)) # 중복내용 0개
+sum(duplicated(senti_score$`제목`)) # 중복내용 136372개 처리
+senti_score <- senti_score[!duplicated(senti_score$`제목`),]
+sum(duplicated(senti_score$`제목`)) # 중복내용 0개
 nrow(senti_score) # 133970
 
 View(senti_score)
@@ -203,7 +207,35 @@ senti_score <- senti_score %>%
                             ifelse(score <= -1, "neg", "neu")))
 
 View(senti_score)
-write.csv(senti_score, "data/감정점수합계_종목토론실.csv")
+# csv파일로 저장
+# write.csv(senti_score, "data/감정점수합계_종목토론실.csv")
+
+
+# train 데이터는 2020~2021 , test 데이터는 2022 이므로
+# 일단 위 데이터에서 22년도 데이터는 따로 분리
+
+# 작성일 컬럼을 as.Date 변환
+senti_score$`작성일` <- as.Date(gsub('\\.','-',senti_score$`작성일`))
+senti_score$`작성일`
+
+glimpse(senti_score$`작성일`)
+
+# Sys.setlocale("LC_ALL", "Korean")
+test_data <- senti_score["2022-01-01" <= senti_score$`작성일`,]
+train_data <- senti_score["2022-01-01" > senti_score$`작성일`,]
+View(test_data)
+View(train_data)
+names(test_data) <- c('date', 'text', 'score', 'senti')
+names(train_data) <- c('date', 'text', 'score', 'senti')
+head(test_data)
+head(train_data)
+
+# csv 파일로 저장
+# write.csv(test_data, "data/test_감정점수합계_종목토론실.csv")
+# write.csv(train_data, "data/train_감정점수합계_종목토론실.csv")
+
+
+# ------------------------------------------------------------------
 
 # 감정 점수 높은순으로 정렬
 ### 긍정
