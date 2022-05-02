@@ -39,11 +39,8 @@ View(raw_discuss)
 nrow(raw_discuss['제목']) # 221497
 
 ## 도배글 찾기 
-sum(duplicated(raw_discuss$제목)) # [1] 35588
-sum(!duplicated(raw_discuss$제목)) # [1] 185909
-
 # 제목 컬럼, 중복 내용 정리
-raw_discuss[!duplicated(raw_discuss$제목),]
+sum(duplicated(raw_discuss$제목)) # [1] 35588
 raw_discuss2 <- raw_discuss[!duplicated(raw_discuss$제목),]
 View(raw_discuss2)
 typeof(raw_discuss2) # [1] "list"
