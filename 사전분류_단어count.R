@@ -108,7 +108,7 @@ View(sentiword_count)
 for (i in 1:nrow(sentiword_count)){
   t = as.character(sentiword_count[i, 'word'])
   
-  # 사전에 t(i행의 단어)가 없으면 : 카카오는 F
+  # 사전에 t(i행의 단어)가 없으면 
   if(sum(knu_dic$word %in% t) == 0){
     
       knu_dic2 <- rbind(knu_dic2, sentiword_count[i,])

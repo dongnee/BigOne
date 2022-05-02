@@ -66,19 +66,19 @@ word_twitter <- raw_twitter3 %>%
   # unnest_tokens : 다루고자하는 텍스트 데이터 객체
   unnest_tokens(input = Text, # 정돈할 열이름
                 output = word, # 정돈된 결과열의 이름
-                token = SimplePos09, # "words" -> extractNoun 수정
+                token = SimplePos09, # 형태소 추출함수
                 drop = F)
-
+View(word_twitter)
 # 명사만 추출해서 형태소 정보를 제거함
 word_twitter_n <- word_twitter %>% 
   filter(str_detect(word, "/n")) %>% 
   mutate(word = str_remove(word, "/.*$"))
-
+View(word_twitter_n)
 # 형용사도 추출
 word_twitter_p <- word_twitter %>% 
   filter(str_detect(word, "/p")) %>%
   mutate(word = str_replace_all(word, "/.*$", "다"))
-
+View(word_twitter_p)
 # 한 글자는 전후 맥락없이 의미를 파악하기 어렵기 때문에 제거
 word_twitter_done <- bind_rows(word_twitter_n, word_twitter_p) %>% 
   arrange(id) %>% 
@@ -189,6 +189,7 @@ senti_word <- word_twitter_done %>%
   filter(!is.na(polarity))
 
 nrow(senti_word) # 32611
+View(senti_word)
 
 
 ## polarity 점수별로 긍정/부정/중립 분류
@@ -196,7 +197,7 @@ senti_word2 <- senti_word %>%
   mutate(sentiment = ifelse(polarity >= 1, "pos",
                             ifelse(polarity <= -1, "neg", "neu")))
 
-
+View(senti_word2)
 ### 긍정, 부정단어별 가장 빈도가 많은 20개 추출
 top10_senti <- senti_word2 %>%
   filter(sentiment != "neu") %>%
