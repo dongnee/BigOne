@@ -10,6 +10,9 @@
 
 팀원 : 김도연, 김세윤, 박균탁, 장은영
 
+- 발표자료  
+	- https://github.com/somijjjjj/BigOne/blob/eunyoung/1%EC%A1%B0%20%EB%B0%9C%ED%91%9C%EC%9E%90%EB%A3%8C.pdf
+
 <br>
 
 ### 주제 선정
@@ -141,6 +144,81 @@ R2(결정계수)가 모델의 대한 설명력이므로
 직접 수집하고 가공한 긍정/부정 단어를 분석에 더욱 활용하지 못한 것이 아쉽습니다.
 
 예측 모델에 인풋 데이터로 지난 sns언급량 등을 추가하여 여러 데이터로 모델을 구성을 해보았으면 좋았을 거 같습니다.
+
+
+
+<br>
+<br>
+
+### Reference
+
+- 주가 예측 관련 글
+
+https://ohshinyeop.tistory.com/13 
+
+[[LSTM/GRU] 주식가격 예측 모델 구현](https://data-analysis-expertise.tistory.com/67)  
+
+[주식, 비트코인 예측 : 머신러닝 분류모델 : 개념, 종류, 특징](https://jjeongil.tistory.com/673)  
+
+[[파이썬]딥러닝(LSTM)을 이용한 'Apple' 주가 예측하기](https://aalto.tistory.com/6)   
+
+
+[[파이썬] 예측모델 (LSTM 모델 주가예측)](https://post.naver.com/viewer/postView.nhn?volumeNo=29132930&memberNo=18071586)    
+
+
+[주가 예측 모델 생성시 주의사항](https://codingapple.com/unit/deep-learning-stock-price-ai/)  
+
+
+[주가 예측모델 예시(RNN, LSTM)](https://diane-space.tistory.com/331)  
+
+
+[비트코인 예측](https://github.com/Maker-Kim/Study/blob/master/python/Coin_Ai.ipynb)  
+
+
+[주가 데이터 불러오는 법](https://dacon.io/codeshare/3710?dtype=recent)  
+
+
+[20년 이후로 주식을 시작한 사람들의 수익 분석 및 주식 투자 예측](https://dacon.io/codeshare/2150?dtype=recent)  
+
+
+[주가예측 그리기](https://muscleking3426.tistory.com/48)  
+
+
+[LSTM을활용한주가예측모델](https://colab.research.google.com/github/teddylee777/machine-learning/blob/master/04-TensorFlow2.0/01-%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90-%EC%A3%BC%EA%B0%80%EC%98%88%EC%B8%A1/02-LSTM-stock-forecasting-with-LSTM-financedatareader.ipynb#scrollTo=e1O7vDdihUs4)  
+
+
+[ARIMA모델](https://rdmkyg.blogspot.com/2021/08/autoarima-nasdaq-100.html)
+
+
+<br>
+
+- 감성분석 관련 글
+
+[[NLP] 텍스트 분류와 감성(Sentiment)분석 구현하기](https://techblog-history-younghunjo1.tistory.com/111)  
+
+
+[KNU 한국어 감성사전 - 긍/부정 단어](https://github.com/park1200656/KnuSentiLex)   
+
+
+[긍/부정 분류](https://projectlog-eraser.tistory.com/21) 
+→ 주가 특성상 수치로 표현된 기사 제목들도 많으므로, 수치에 대한 기준도 필요할 것
+
+[R. 텍스트 마이닝 _ 감정 분석](https://velog.io/@yuhayung7296/R.-%ED%85%8D%EC%8A%A4%ED%8A%B8-%EB%A7%88%EC%9D%B4%EB%8B%9D-%EA%B0%90%EC%A0%95-%EB%B6%84%EC%84%9D) 
+
+
+<br>
+
+- 자연어 처리
+
+https://blog.naver.com/dalgoon02121/222051184805  
+
+https://wonhwa.tistory.com/35
+
+<br>
+
+- 기타
+
+https://right1203.github.io/study/2018/09/12/sentiment-analysis-1/
 
 
 
